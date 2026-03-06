@@ -324,7 +324,7 @@ function NextIngredientTab() {
         Buy these to unlock the most new cocktails with your current bar.
       </p>
 
-      {recommendations.map((rec, i) => {
+      {recommendations.map((rec) => {
         const added = has(rec.ingredient)
         return (
           <button
