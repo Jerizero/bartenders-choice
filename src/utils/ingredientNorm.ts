@@ -56,11 +56,47 @@ const ALIASES: Record<string, string> = {
   // Combined bitters
   'orange and angostura bitters': 'orange bitters',
   'angostura amaro': 'angostura bitters',
+  // Juice normalization — "lime juice" and "lime" are the same ingredient
+  'lime juice': 'lime',
+  'lime chunks': 'lime',
+  'lemon/lime': 'lemon/lime juice',
+  'orange juice': 'orange',
+  'pineapple juice': 'pineapple',
+  'watermelon juice': 'watermelon',
+  'white grapefruit': 'grapefruit',
+  'granny smith apple juice': 'apple cider',
+  'pear juice': 'pear',
+  'juice': 'lemon/lime juice',
+  // Flower water variants
+  'orange flower': 'orange flower water',
+  'rose water': 'rosewater',
+  // Typo fixes
+  'amontadillo sherry': 'amontillado sherry',
+  'cherry herring': 'cherry heering',
+  // Same product, different names
+  'allspice liqueur': 'allspice dram',
+  'averna amaro': 'averna',
+  'velvet falernum': 'falernum',
+  'coco lopez': 'coconut cream',
+  'amaro sfumato rabarbaro': 'sfumato amaro',
+  'lofi gentian amaro': 'lo-fi amaro',
+  'cholula hot sauce': 'cholula',
+  'lolita': 'cafe lolita',
+  'fernet': 'fernet branca',
+  // Blackstrap rum spelling variants
+  'black strap rum': 'blackstrap rum',
+  'back strap rum': 'blackstrap rum',
+  'cruzan black strap rum': 'blackstrap rum',
+  // Bruised cucumber is just cucumber
+  'bruised cucumber': 'cucumber',
 }
 
 function cleanOne(raw: string): string {
   let s = raw.trim().toLowerCase()
   if (!s || s === '- -') return ''
+
+  // Normalize smart quotes to straight quotes
+  s = s.replace(/[\u2018\u2019]/g, "'")
 
   // Strip all parentheticals (floated, squeezed & discarded, etc.)
   s = s.replace(/\s*\(.*?\)/g, '').trim()
