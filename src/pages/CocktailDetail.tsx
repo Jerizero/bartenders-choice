@@ -3,6 +3,7 @@ import { useState } from 'react'
 import cocktailsData from '../data/cocktails.json'
 import imageMap from '../data/image-map.json'
 import type { Cocktail } from '../types'
+import { useFavoritesContext } from '../context/FavoritesContext'
 
 const cocktails = cocktailsData as Cocktail[]
 const imgMap = imageMap as Record<string, string>
@@ -19,6 +20,7 @@ export default function CocktailDetail() {
   const navigate = useNavigate()
   const [useMetric, setUseMetric] = useState(false)
   const [imgError, setImgError] = useState(false)
+  const { isFavorite, toggle } = useFavoritesContext()
 
   const cocktail = cocktails.find((c) => c.slug === slug)
 
@@ -35,9 +37,10 @@ export default function CocktailDetail() {
 
   const imgFile = imgMap[cocktail.imageId]
   const imgSrc = imgFile ? `/images/cocktails/${imgFile}` : null
+  const fav = isFavorite(cocktail.id)
 
   return (
-    <div className="pb-8">
+    <div className="max-w-lg mx-auto pb-8">
       {/* Back button */}
       <button
         onClick={() => navigate(-1)}
@@ -46,6 +49,17 @@ export default function CocktailDetail() {
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
           <path d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      {/* Favorite button */}
+      <button
+        onClick={() => toggle(cocktail.id)}
+        className="fixed top-4 right-4 z-30 bg-charcoal/80 backdrop-blur-sm rounded-full p-2 transition-colors"
+        aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        <svg viewBox="0 0 24 24" className="w-5 h-5" fill={fav ? '#c9a84c' : 'none'} stroke={fav ? '#c9a84c' : 'currentColor'} strokeWidth={2}>
+          <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
         </svg>
       </button>
 

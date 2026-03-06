@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { FavoritesProvider } from './context/FavoritesContext'
 import RecipeBook from './pages/RecipeBook'
 import CocktailDetail from './pages/CocktailDetail'
 import IFeelLike from './pages/IFeelLike'
 import Favorites from './pages/Favorites'
 import Guides from './pages/Guides'
+import GuideDetail from './pages/GuideDetail'
 
 function NavIcon({ d, label }: { d: string; label: string }) {
   return (
@@ -23,6 +25,7 @@ const tabs = [
 export default function App() {
   return (
     <BrowserRouter>
+      <FavoritesProvider>
       <div className="flex flex-col min-h-dvh">
         <main className="flex-1 pb-20">
           <Routes>
@@ -32,6 +35,7 @@ export default function App() {
             <Route path="/i-feel-like" element={<IFeelLike />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/guides" element={<Guides />} />
+            <Route path="/guides/:slug" element={<GuideDetail />} />
           </Routes>
         </main>
 
@@ -54,6 +58,7 @@ export default function App() {
           </div>
         </nav>
       </div>
+    </FavoritesProvider>
     </BrowserRouter>
   )
 }
