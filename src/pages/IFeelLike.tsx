@@ -207,8 +207,8 @@ export default function IFeelLike() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {finalPool.slice(0, 20).map((c) => {
-                const thumbFile = imgMap[c.imageId]
-                const thumbSrc = thumbFile ? `/images/thumbs/${thumbFile}` : null
+                const imgFile = imgMap[c.imageId]
+                const imgSrc = imgFile ? `/images/cocktails/${imgFile}` : null
                 return (
                   <Link
                     key={c.id}
@@ -216,8 +216,8 @@ export default function IFeelLike() {
                     className="rounded-lg overflow-hidden bg-charcoal-light border border-charcoal-lighter/50 active:bg-charcoal-lighter/30 transition-colors"
                   >
                     <div className="aspect-square bg-charcoal-lighter">
-                      {thumbSrc && (
-                        <img src={thumbSrc} alt={c.name} loading="lazy" className="w-full h-full object-cover" />
+                      {imgSrc && (
+                        <img src={imgSrc} alt={c.name} loading="lazy" className="w-full h-full object-cover" />
                       )}
                     </div>
                     <div className="px-2 py-2">
