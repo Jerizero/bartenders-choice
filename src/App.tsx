@@ -33,7 +33,7 @@ export default function App() {
       <div className="flex flex-col min-h-dvh">
         <main className="flex-1 pb-20">
           <Routes>
-            <Route path="/" element={<Navigate to="/recipes" replace />} />
+            <Route path="/" element={<Navigate to="/i-feel-like" replace />} />
             <Route path="/recipes" element={<RecipeBook />} />
             <Route path="/cocktail/:slug" element={<CocktailDetail />} />
             <Route path="/i-feel-like" element={<IFeelLike />} />

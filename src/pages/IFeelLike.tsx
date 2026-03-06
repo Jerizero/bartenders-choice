@@ -7,10 +7,14 @@ import type { Cocktail } from '../types'
 const cocktails = cocktailsData as Cocktail[]
 const imgMap = imageMap as Record<string, string>
 
-type Step = 'sensation' | 'style' | 'strength' | 'results'
-const STEPS: Step[] = ['sensation', 'style', 'strength', 'results']
+type Step = 'choose' | 'baseAlcohol' | 'sensation' | 'style' | 'strength' | 'results'
+
+const SPIRIT_FIRST: Step[] = ['choose', 'baseAlcohol', 'sensation', 'style', 'strength', 'results']
+const MOOD_FIRST: Step[] = ['choose', 'sensation', 'baseAlcohol', 'style', 'strength', 'results']
 
 const STEP_LABELS: Record<Step, string> = {
+  choose: 'How do you want to start?',
+  baseAlcohol: 'What spirit are you in the mood for?',
   sensation: 'How do you want it to feel?',
   style: 'How should it be made?',
   strength: 'Light or dark?',
@@ -27,6 +31,11 @@ const STYLE_OPTIONS = [
   'fizzy', 'tiki', 'crushed', 'tall',
 ]
 const STRENGTH_OPTIONS = ['light', 'dark', 'both']
+
+const BASE_ALCOHOL_OPTIONS = [
+  'gin', 'whiskey', 'bourbon', 'rye', 'rum', 'tequila', 'mezcal',
+  'vodka', 'brandy', 'cognac', 'scotch', 'champagne',
+]
 
 function getOptionsWithCounts(
   pool: Cocktail[],
@@ -47,17 +56,25 @@ function getStrengthCounts(pool: Cocktail[]) {
 }
 
 export default function IFeelLike() {
-  const [step, setStep] = useState<Step>('sensation')
+  const [step, setStep] = useState<Step>('choose')
+  const [flow, setFlow] = useState<Step[]>(SPIRIT_FIRST)
   const [selections, setSelections] = useState<{
+    baseAlcohol: string | null
     sensation: string | null
     style: string | null
     strength: string | null
-  }>({ sensation: null, style: null, strength: null })
+  }>({ baseAlcohol: null, sensation: null, style: null, strength: null })
+
+  // Filter pools — order-independent, always apply all active filters
+  const poolAfterAlcohol = useMemo(() => {
+    if (!selections.baseAlcohol) return cocktails
+    return cocktails.filter((c) => c.alcohol.includes(selections.baseAlcohol!))
+  }, [selections.baseAlcohol])
 
   const poolAfterSensation = useMemo(() => {
-    if (!selections.sensation) return cocktails
-    return cocktails.filter((c) => c.sensation.includes(selections.sensation!))
-  }, [selections.sensation])
+    if (!selections.sensation) return poolAfterAlcohol
+    return poolAfterAlcohol.filter((c) => c.sensation.includes(selections.sensation!))
+  }, [poolAfterAlcohol, selections.sensation])
 
   const poolAfterStyle = useMemo(() => {
     if (!selections.style) return poolAfterSensation
@@ -72,23 +89,41 @@ export default function IFeelLike() {
     )
   }, [poolAfterStyle, selections.strength])
 
-  const stepIndex = STEPS.indexOf(step)
+  // Current pool for showing counts (everything filtered so far)
+  const currentPool = useMemo(() => {
+    let pool = cocktails
+    if (selections.baseAlcohol) pool = pool.filter((c) => c.alcohol.includes(selections.baseAlcohol!))
+    if (selections.sensation) pool = pool.filter((c) => c.sensation.includes(selections.sensation!))
+    return pool
+  }, [selections.baseAlcohol, selections.sensation])
 
-  function select(field: 'sensation' | 'style' | 'strength', value: string) {
+  const stepIndex = flow.indexOf(step)
+  // Filter steps for progress dots (exclude 'choose' and 'results')
+  const filterSteps = flow.filter((s) => s !== 'choose' && s !== 'results')
+  const filterStepIndex = (filterSteps as Step[]).indexOf(step)
+
+  function chooseFlow(startWith: 'spirit' | 'mood') {
+    const f = startWith === 'spirit' ? SPIRIT_FIRST : MOOD_FIRST
+    setFlow(f)
+    setStep(f[1]) // skip 'choose', go to first real step
+  }
+
+  function select(field: 'baseAlcohol' | 'sensation' | 'style' | 'strength', value: string) {
     setSelections((prev) => ({ ...prev, [field]: value }))
-    const nextStep = STEPS[STEPS.indexOf(step) + 1]
+    const nextStep = flow[flow.indexOf(step) + 1]
     if (nextStep) setStep(nextStep)
   }
 
   function goBack() {
-    if (stepIndex === 0) return
-    const prevStep = STEPS[stepIndex - 1]
+    if (stepIndex <= 0) return
+    const prevStep = flow[stepIndex - 1]
     setStep(prevStep)
   }
 
   function startOver() {
-    setSelections({ sensation: null, style: null, strength: null })
-    setStep('sensation')
+    setSelections({ baseAlcohol: null, sensation: null, style: null, strength: null })
+    setFlow(SPIRIT_FIRST)
+    setStep('choose')
   }
 
   return (
@@ -97,17 +132,19 @@ export default function IFeelLike() {
         I Feel Like...
       </h1>
 
-      {/* Progress dots */}
-      <div className="flex justify-center gap-2 mb-6">
-        {STEPS.slice(0, 3).map((s, i) => (
-          <div
-            key={s}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              i < stepIndex ? 'bg-gold' : i === stepIndex ? 'bg-gold/60' : 'bg-charcoal-lighter'
-            }`}
-          />
-        ))}
-      </div>
+      {/* Progress dots (only show after choosing a flow) */}
+      {step !== 'choose' && (
+        <div className="flex justify-center gap-2 mb-6">
+          {filterSteps.map((s, i) => (
+            <div
+              key={s}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                i < filterStepIndex ? 'bg-gold' : i === filterStepIndex ? 'bg-gold/60' : 'bg-charcoal-lighter'
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Step question */}
       <p className="text-cream text-center text-sm mb-6 font-sans tracking-wider">
@@ -115,8 +152,13 @@ export default function IFeelLike() {
       </p>
 
       {/* Current selections */}
-      {(selections.sensation || selections.style || selections.strength) && (
+      {(selections.baseAlcohol || selections.sensation || selections.style || selections.strength) && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {selections.baseAlcohol && (
+            <span className="text-[10px] tracking-wider uppercase font-sans px-3 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
+              {selections.baseAlcohol}
+            </span>
+          )}
           {selections.sensation && (
             <span className="text-[10px] tracking-wider uppercase font-sans px-3 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
               {selections.sensation}
@@ -135,21 +177,71 @@ export default function IFeelLike() {
         </div>
       )}
 
+      {/* Choose starting path */}
+      {step === 'choose' && (
+        <div className="flex flex-col gap-3 max-w-xs mx-auto">
+          <button
+            onClick={() => chooseFlow('spirit')}
+            className="px-6 py-5 rounded-lg border border-charcoal-lighter text-sm font-sans tracking-wider text-cream hover:border-gold/50 hover:text-gold active:bg-gold/10 transition-colors"
+          >
+            By Spirit
+            <span className="block text-[10px] text-cream-dim mt-1">I know what base I want</span>
+          </button>
+          <button
+            onClick={() => chooseFlow('mood')}
+            className="px-6 py-5 rounded-lg border border-charcoal-lighter text-sm font-sans tracking-wider text-cream hover:border-gold/50 hover:text-gold active:bg-gold/10 transition-colors"
+          >
+            By Mood
+            <span className="block text-[10px] text-cream-dim mt-1">I know how I want it to feel</span>
+          </button>
+        </div>
+      )}
+
+      {/* Base alcohol step */}
+      {step === 'baseAlcohol' && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            {BASE_ALCOHOL_OPTIONS.map((opt) => {
+              const count = currentPool.filter((c) => c.alcohol.includes(opt)).length
+              return (
+                <button
+                  key={opt}
+                  onClick={() => select('baseAlcohol', opt)}
+                  disabled={count === 0}
+                  className="px-4 py-3 rounded-lg border border-charcoal-lighter text-sm font-sans tracking-wider capitalize text-cream hover:border-gold/50 hover:text-gold active:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {opt}
+                  <span className="block text-[10px] text-cream-dim mt-0.5">{count} cocktails</span>
+                </button>
+              )
+            })}
+          </div>
+          <button onClick={() => select('baseAlcohol', '')} className="w-full mt-3 text-cream-dim text-xs underline">
+            Skip — surprise me
+          </button>
+        </>
+      )}
+
       {/* Sensation step */}
       {step === 'sensation' && (
-        <div className="grid grid-cols-2 gap-2">
-          {getOptionsWithCounts(cocktails, 'sensation', SENSATION_OPTIONS).map(({ value, count }) => (
-            <button
-              key={value}
-              onClick={() => select('sensation', value)}
-              disabled={count === 0}
-              className="px-4 py-3 rounded-lg border border-charcoal-lighter text-sm font-sans tracking-wider capitalize text-cream hover:border-gold/50 hover:text-gold active:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {value}
-              <span className="block text-[10px] text-cream-dim mt-0.5">{count} cocktails</span>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            {getOptionsWithCounts(currentPool, 'sensation', SENSATION_OPTIONS).map(({ value, count }) => (
+              <button
+                key={value}
+                onClick={() => select('sensation', value)}
+                disabled={count === 0}
+                className="px-4 py-3 rounded-lg border border-charcoal-lighter text-sm font-sans tracking-wider capitalize text-cream hover:border-gold/50 hover:text-gold active:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {value}
+                <span className="block text-[10px] text-cream-dim mt-0.5">{count} cocktails</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={() => select('sensation', '')} className="w-full mt-3 text-cream-dim text-xs underline">
+            Skip this step
+          </button>
+        </>
       )}
 
       {/* Style step */}
