@@ -7,7 +7,7 @@ const DEBOUNCE_MS = 300
 export default function useSearch(cocktails: Cocktail[]) {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     timerRef.current = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS)
