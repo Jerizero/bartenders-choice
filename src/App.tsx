@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { FavoritesProvider } from './context/FavoritesContext'
 import { MyBarProvider } from './context/MyBarContext'
+import { UserDataProvider } from './context/UserDataContext'
 import RecipeBook from './pages/RecipeBook'
 import CocktailDetail from './pages/CocktailDetail'
 import IFeelLike from './pages/IFeelLike'
@@ -30,6 +31,7 @@ export default function App() {
     <BrowserRouter>
       <FavoritesProvider>
       <MyBarProvider>
+      <UserDataProvider>
       <div className="flex flex-col min-h-dvh">
         <main className="flex-1 pb-20">
           <Routes>
@@ -63,6 +65,7 @@ export default function App() {
           </div>
         </nav>
       </div>
+    </UserDataProvider>
     </MyBarProvider>
     </FavoritesProvider>
     </BrowserRouter>

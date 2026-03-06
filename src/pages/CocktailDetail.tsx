@@ -4,6 +4,7 @@ import cocktailsData from '../data/cocktails.json'
 import imageMap from '../data/image-map.json'
 import type { Cocktail } from '../types'
 import { useFavoritesContext } from '../context/FavoritesContext'
+import { useUserDataContext } from '../context/UserDataContext'
 
 const cocktails = cocktailsData as Cocktail[]
 const imgMap = imageMap as Record<string, string>
@@ -21,6 +22,7 @@ export default function CocktailDetail() {
   const [useMetric, setUseMetric] = useState(false)
   const [imgError, setImgError] = useState(false)
   const { isFavorite, toggle } = useFavoritesContext()
+  const { getRating, setRating, getNotes, setNotes } = useUserDataContext()
 
   const cocktail = cocktails.find((c) => c.slug === slug)
 
@@ -142,27 +144,37 @@ export default function CocktailDetail() {
           )}
 
           {/* Rating */}
-          {cocktail.rating > 0 && (
-            <div className="mt-8 flex items-center gap-1">
-              {Array.from({ length: 5 }, (_, i) => (
-                <svg
-                  key={i}
-                  viewBox="0 0 20 20"
-                  className={`w-4 h-4 ${
-                    i < Math.floor(cocktail.rating)
-                      ? 'text-gold'
-                      : i < cocktail.rating
-                        ? 'text-gold-dim'
-                        : 'text-charcoal-lighter'
-                  }`}
-                  fill="currentColor"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-              <span className="text-cream-dim text-xs ml-2 tabular-nums">{cocktail.rating}</span>
-            </div>
-          )}
+          {(() => {
+            const userRating = getRating(cocktail.id)
+            const displayRating = userRating || cocktail.rating
+            return (
+              <div className="mt-8">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setRating(cocktail.id, userRating === i + 1 ? 0 : i + 1)}
+                      className="p-0.5 -m-0.5 cursor-pointer"
+                      aria-label={`Rate ${i + 1} star${i > 0 ? 's' : ''}`}
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        className={`w-5 h-5 transition-colors ${
+                          i < displayRating ? 'text-gold' : 'text-charcoal-lighter'
+                        }`}
+                        fill="currentColor"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  ))}
+                  {userRating > 0 && (
+                    <span className="text-cream-dim text-[10px] ml-2 tracking-wider">Your rating</span>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Tags */}
           <div className="mt-6 flex flex-wrap gap-2">
@@ -181,6 +193,18 @@ export default function CocktailDetail() {
                 {tag}
               </span>
             ))}
+          </div>
+
+          {/* Personal Notes */}
+          <div className="mt-8">
+            <h2 className="text-gold text-xs tracking-[0.2em] uppercase font-sans mb-3">My Notes</h2>
+            <textarea
+              value={getNotes(cocktail.id)}
+              onChange={(e) => setNotes(cocktail.id, e.target.value)}
+              placeholder="Add your tasting notes, variations, or reminders..."
+              rows={3}
+              className="w-full bg-charcoal-light border border-charcoal-lighter rounded-lg px-3 py-2.5 text-cream text-sm placeholder:text-cream-dim/40 focus:outline-none focus:border-gold/50 resize-y leading-relaxed"
+            />
           </div>
         </div>
       </div>
