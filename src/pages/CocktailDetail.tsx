@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import cocktailsData from '../data/cocktails.json'
 import imageMap from '../data/image-map.json'
 import type { Cocktail } from '../types'
@@ -23,6 +23,14 @@ export default function CocktailDetail() {
   const [imgError, setImgError] = useState(false)
   const { isFavorite, toggle } = useFavoritesContext()
   const { getRating, setRating, getNotes, setNotes } = useUserDataContext()
+  const [showSaved, setShowSaved] = useState(false)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+  const handleNotesChange = useCallback((id: number, value: string) => {
+    setNotes(id, value)
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => setShowSaved(true), 600)
+  }, [setNotes])
 
   const cocktail = cocktails.find((c) => c.slug === slug)
 
@@ -197,10 +205,20 @@ export default function CocktailDetail() {
 
           {/* Personal Notes */}
           <div className="mt-8">
-            <h2 className="text-gold text-xs tracking-[0.2em] uppercase font-sans mb-3">My Notes</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-gold text-xs tracking-[0.2em] uppercase font-sans">My Notes</h2>
+              <span
+                className={`text-[10px] tracking-wider font-sans transition-opacity duration-500 ${
+                  showSaved ? 'text-gold/80 opacity-100' : 'opacity-0'
+                }`}
+                onTransitionEnd={() => { if (showSaved) setTimeout(() => setShowSaved(false), 1500) }}
+              >
+                Saved
+              </span>
+            </div>
             <textarea
               value={getNotes(cocktail.id)}
-              onChange={(e) => setNotes(cocktail.id, e.target.value)}
+              onChange={(e) => handleNotesChange(cocktail.id, e.target.value)}
               placeholder="Add your tasting notes, variations, or reminders..."
               rows={3}
               className="w-full bg-charcoal-light border border-charcoal-lighter rounded-lg px-3 py-2.5 text-cream text-sm placeholder:text-cream-dim/40 focus:outline-none focus:border-gold/50 resize-y leading-relaxed"
