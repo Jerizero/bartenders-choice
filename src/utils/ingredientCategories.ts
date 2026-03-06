@@ -47,8 +47,8 @@ const LIQUEUR_KW = [
   'suze', 'pimms', 'cassis', 'falernum', 'velvet falernum', 'allspice dram',
   'allspice liqueur', 'cherry heering', 'cherry herring', 'cafe lolita',
   'lolita', 'creme de', 'crème de', 'ancho reyes', 'licor 43',
-  'st. germain', 'elderflower', 'punch fantasia', 'biscotti', 'coco lopez',
-  'coconut cream', 'coffee liqueur', 'bruto americano', 'gran classico',
+  'st. germain', 'elderflower', 'punch fantasia', 'biscotti',
+  'coffee liqueur', 'bruto americano', 'gran classico',
   'gary classico',
 ]
 
@@ -80,7 +80,7 @@ const CITRUS_JUICE_KW = [
 
 const MIXER_KW = [
   'club soda', 'soda', 'tonic', 'sprite', 'ginger', 'beer', 'modelo',
-  'cola',
+  'cola', 'coconut cream', 'coconut water',
 ]
 
 function toSubCat(label: string, items: string[]): SubCategory | null {

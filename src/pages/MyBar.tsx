@@ -13,7 +13,7 @@ const imgMap = imageMap as Record<string, string>
 const allIngredientNames = buildIngredientList(allCocktails)
 const categorized = categorizeIngredients(allIngredientNames)
 
-type Tab = 'ingredients' | 'canMake' | 'nextBottle'
+type Tab = 'ingredients' | 'canMake' | 'nextIngredient'
 
 const PLACEHOLDER = (
   <svg viewBox="0 0 256 256" className="w-full h-full" aria-hidden>
@@ -271,8 +271,8 @@ function CanMakeTab() {
   )
 }
 
-function NextBottleTab() {
-  const { has, count } = useMyBarContext()
+function NextIngredientTab() {
+  const { has, toggle, count } = useMyBarContext()
 
   const recommendations = useMemo(() => {
     if (count === 0) return []
@@ -324,25 +324,46 @@ function NextBottleTab() {
         Buy these to unlock the most new cocktails with your current bar.
       </p>
 
-      {recommendations.map((rec, i) => (
-        <div
-          key={rec.ingredient}
-          className="mb-3 p-3 rounded-lg border border-charcoal-lighter/50 bg-charcoal-light/50"
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-cream text-sm font-sans tracking-wide capitalize">
-              {i + 1}. {rec.ingredient}
-            </span>
-            <span className="text-gold text-xs font-sans tracking-wider">
-              +{rec.unlocks} cocktail{rec.unlocks !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <p className="text-cream-dim text-xs truncate">
-            {rec.almostNames.join(', ')}
-            {rec.unlocks > rec.almostNames.length ? `, +${rec.unlocks - rec.almostNames.length} more` : ''}
-          </p>
-        </div>
-      ))}
+      {recommendations.map((rec, i) => {
+        const added = has(rec.ingredient)
+        return (
+          <button
+            key={rec.ingredient}
+            onClick={() => toggle(rec.ingredient)}
+            className={`mb-3 p-3 rounded-lg border w-full text-left transition-all duration-200 cursor-pointer ${
+              added
+                ? 'border-gold/60 bg-gold/10'
+                : 'border-charcoal-lighter/50 bg-charcoal-light/50 hover:border-gold/40 hover:bg-charcoal-light active:bg-charcoal-lighter/30 active:scale-[0.98]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0 border ${
+                  added
+                    ? 'bg-gold/20 border-gold/60 text-gold'
+                    : 'border-charcoal-lighter/60 text-cream-dim'
+                }`}>
+                  {added ? '✓' : '+'}
+                </span>
+                <span className={`text-sm font-sans tracking-wide capitalize ${added ? 'text-gold' : 'text-cream'}`}>
+                  {rec.ingredient}
+                </span>
+              </div>
+              {added ? (
+                <span className="text-gold text-xs font-sans tracking-wider">Added</span>
+              ) : (
+                <span className="text-gold text-xs font-sans tracking-wider">
+                  +{rec.unlocks} cocktail{rec.unlocks !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <p className="text-cream-dim text-xs truncate">
+              {rec.almostNames.join(', ')}
+              {rec.unlocks > rec.almostNames.length ? `, +${rec.unlocks - rec.almostNames.length} more` : ''}
+            </p>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -350,7 +371,7 @@ function NextBottleTab() {
 const tabs: { key: Tab; label: string }[] = [
   { key: 'ingredients', label: 'Ingredients' },
   { key: 'canMake', label: 'Can Make' },
-  { key: 'nextBottle', label: 'Next Bottle' },
+  { key: 'nextIngredient', label: 'Next Ingredient' },
 ]
 
 export default function MyBar() {
@@ -387,7 +408,7 @@ export default function MyBar() {
 
       {activeTab === 'ingredients' && <IngredientsTab />}
       {activeTab === 'canMake' && <CanMakeTab />}
-      {activeTab === 'nextBottle' && <NextBottleTab />}
+      {activeTab === 'nextIngredient' && <NextIngredientTab />}
     </div>
   )
 }
