@@ -3,10 +3,13 @@ import cocktailsData from '../data/cocktails.json'
 import type { Cocktail } from '../types'
 import CocktailCard from '../components/CocktailCard'
 import LetterSidebar from '../components/LetterSidebar'
+import SearchBar from '../components/SearchBar'
+import ShakeButton from '../components/ShakeButton'
+import useSearch from '../hooks/useSearch'
 
-const cocktails = cocktailsData as Cocktail[]
+const allCocktails = cocktailsData as Cocktail[]
+const sorted = [...allCocktails].sort((a, b) => a.name.localeCompare(b.name))
 
-// Group cocktails A-Z by first letter of name
 function groupByLetter(items: Cocktail[]): Map<string, Cocktail[]> {
   const groups = new Map<string, Cocktail[]>()
   for (const c of items) {
@@ -18,14 +21,14 @@ function groupByLetter(items: Cocktail[]): Map<string, Cocktail[]> {
   return groups
 }
 
-const sorted = [...cocktails].sort((a, b) => a.name.localeCompare(b.name))
-const grouped = groupByLetter(sorted)
-const letters = [...grouped.keys()].sort()
-
 export default function RecipeBook() {
+  const { query, setQuery, results } = useSearch(sorted)
+  const isSearching = query.trim().length > 0
+  const grouped = groupByLetter(isSearching ? results : sorted)
+  const letters = [...grouped.keys()].sort()
+
   const [activeLetter, setActiveLetter] = useState(letters[0] || 'A')
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const handleLetterClick = useCallback((letter: string) => {
     const el = sectionRefs.current.get(letter)
@@ -35,7 +38,6 @@ export default function RecipeBook() {
     }
   }, [])
 
-  // Track which letter section is visible during scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -54,18 +56,30 @@ export default function RecipeBook() {
     }
 
     return () => observer.disconnect()
-  }, [])
+  }, [letters])
 
   return (
-    <div ref={scrollContainerRef} className="relative">
-      <h1 className="text-2xl text-gold tracking-widest uppercase text-center py-6 font-sans">
+    <div className="relative">
+      <h1 className="text-2xl text-gold tracking-widest uppercase text-center pt-6 pb-2 font-sans">
         Recipe Book
       </h1>
-      <p className="text-cream-dim text-center text-xs mb-4 font-sans tracking-wider">
-        {cocktails.length} cocktails
-      </p>
+
+      <div className="flex justify-center mb-3">
+        <ShakeButton />
+      </div>
+
+      <SearchBar value={query} onChange={setQuery} resultCount={results.length} />
+
+      {!isSearching && (
+        <p className="text-cream-dim text-center text-xs mb-2 font-sans tracking-wider">
+          {allCocktails.length} cocktails
+        </p>
+      )}
 
       <div className="pr-6">
+        {letters.length === 0 && isSearching && (
+          <p className="text-cream-dim text-center text-sm py-12">No cocktails found.</p>
+        )}
         {letters.map((letter) => (
           <div
             key={letter}
@@ -84,11 +98,13 @@ export default function RecipeBook() {
         ))}
       </div>
 
-      <LetterSidebar
-        letters={letters}
-        activeLetter={activeLetter}
-        onLetterClick={handleLetterClick}
-      />
+      {!isSearching && (
+        <LetterSidebar
+          letters={letters}
+          activeLetter={activeLetter}
+          onLetterClick={handleLetterClick}
+        />
+      )}
     </div>
   )
 }
