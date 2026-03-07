@@ -1,4 +1,5 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import cocktailsData from '../data/cocktails.json'
 import type { Cocktail } from '../types'
 import CocktailCard from '../components/CocktailCard'
@@ -9,6 +10,23 @@ import useSearch from '../hooks/useSearch'
 
 const allCocktails = cocktailsData as Cocktail[]
 const sorted = [...allCocktails].sort((a, b) => a.name.localeCompare(b.name))
+
+const SPIRIT_FILTERS = ['gin', 'whiskey', 'rum', 'tequila', 'vodka', 'brandy'] as const
+const VIBE_FILTERS = ['refreshing', 'boozy', 'sweet', 'sour'] as const
+
+type FilterType = { label: string; key: string; kind: 'spirit' | 'sensation' | 'new' }
+
+const FILTERS: FilterType[] = [
+  ...SPIRIT_FILTERS.map((s) => ({ label: s, key: s, kind: 'spirit' as const })),
+  { label: 'New', key: 'new', kind: 'new' as const },
+  ...VIBE_FILTERS.map((s) => ({ label: s, key: s, kind: 'sensation' as const })),
+]
+
+function matchesFilter(cocktail: Cocktail, filter: FilterType): boolean {
+  if (filter.kind === 'new') return cocktail.new
+  if (filter.kind === 'spirit') return cocktail.alcohol.some((a) => a.includes(filter.key))
+  return cocktail.sensation.includes(filter.key)
+}
 
 function groupByLetter(items: Cocktail[]): Map<string, Cocktail[]> {
   const groups = new Map<string, Cocktail[]>()
@@ -22,9 +40,39 @@ function groupByLetter(items: Cocktail[]): Map<string, Cocktail[]> {
 }
 
 export default function RecipeBook() {
-  const { query, setQuery, results } = useSearch(sorted)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialQuery = useMemo(() => searchParams.get('q') || '', [])
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set())
+
+  const filtered = useMemo(() => {
+    if (activeFilters.size === 0) return sorted
+    return sorted.filter((c) =>
+      FILTERS.filter((f) => activeFilters.has(f.key)).every((f) => matchesFilter(c, f))
+    )
+  }, [activeFilters])
+
+  const { query, setQuery, results } = useSearch(filtered, initialQuery)
+
+  // Clear the ?q= param once search is active so URL stays clean on further typing
+  useEffect(() => {
+    if (searchParams.has('q')) {
+      setSearchParams({}, { replace: true })
+    }
+  }, [])
+
+  const toggleFilter = useCallback((key: string) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
+
   const isSearching = query.trim().length > 0
-  const grouped = groupByLetter(isSearching ? results : sorted)
+  const isFiltering = activeFilters.size > 0
+  const displayList = isSearching ? results : filtered
+  const grouped = groupByLetter(displayList)
   const letters = [...grouped.keys()].sort()
 
   const [activeLetter, setActiveLetter] = useState(letters[0] || 'A')
@@ -70,14 +118,34 @@ export default function RecipeBook() {
 
       <SearchBar value={query} onChange={setQuery} resultCount={results.length} />
 
+      {/* Filter chips */}
+      <div className="flex gap-2 overflow-x-auto px-4 py-2 no-scrollbar">
+        {FILTERS.map((f) => {
+          const active = activeFilters.has(f.key)
+          return (
+            <button
+              key={f.key}
+              onClick={() => toggleFilter(f.key)}
+              className={`flex-shrink-0 text-[11px] font-sans tracking-wider uppercase px-3 py-1.5 rounded-full border transition-colors ${
+                active
+                  ? 'bg-gold/20 border-gold text-gold'
+                  : 'border-charcoal-lighter text-cream-dim hover:border-cream-dim'
+              }`}
+            >
+              {f.label}
+            </button>
+          )
+        })}
+      </div>
+
       {!isSearching && (
         <p className="text-cream-dim text-center text-xs mb-2 font-sans tracking-wider">
-          {allCocktails.length} cocktails
+          {isFiltering ? `${displayList.length} of ${allCocktails.length}` : allCocktails.length} cocktails
         </p>
       )}
 
       <div className="pr-6">
-        {letters.length === 0 && isSearching && (
+        {letters.length === 0 && (isSearching || isFiltering) && (
           <p className="text-cream-dim text-center text-sm py-12">No cocktails found.</p>
         )}
         {letters.map((letter) => (
@@ -98,7 +166,7 @@ export default function RecipeBook() {
         ))}
       </div>
 
-      {!isSearching && (
+      {!isSearching && !isFiltering && (
         <LetterSidebar
           letters={letters}
           activeLetter={activeLetter}

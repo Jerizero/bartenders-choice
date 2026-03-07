@@ -4,9 +4,9 @@ import type { Cocktail } from '../types'
 
 const DEBOUNCE_MS = 300
 
-export default function useSearch(cocktails: Cocktail[]) {
-  const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+export default function useSearch(cocktails: Cocktail[], initialQuery = '') {
+  const [query, setQuery] = useState(initialQuery)
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery)
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {

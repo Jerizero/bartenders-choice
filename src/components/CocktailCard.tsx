@@ -36,7 +36,14 @@ export default function CocktailCard({ cocktail }: { cocktail: Cocktail }) {
         <div className={thumbSrc ? 'hidden' : ''}>{PLACEHOLDER}</div>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-cream text-sm font-sans tracking-wide truncate">{cocktail.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-cream text-sm font-sans tracking-wide truncate">{cocktail.name}</p>
+          {cocktail.new && (
+            <span className="flex-shrink-0 text-[9px] font-sans tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-gold/20 text-gold">
+              New
+            </span>
+          )}
+        </div>
         <p className="text-cream-dim text-xs truncate">{cocktail.ingredientsText}</p>
       </div>
     </Link>

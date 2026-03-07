@@ -1,10 +1,13 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useState, useRef, useCallback } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import cocktailsData from '../data/cocktails.json'
 import imageMap from '../data/image-map.json'
 import type { Cocktail } from '../types'
 import { useFavoritesContext } from '../context/FavoritesContext'
 import { useUserDataContext } from '../context/UserDataContext'
+import ShakeButton from '../components/ShakeButton'
+import CocktailCard from '../components/CocktailCard'
+import { getRelated } from '../utils/relatedness'
 
 const cocktails = cocktailsData as Cocktail[]
 const imgMap = imageMap as Record<string, string>
@@ -31,6 +34,10 @@ export default function CocktailDetail() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => setShowSaved(true), 600)
   }, [setNotes])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [slug])
 
   const cocktail = cocktails.find((c) => c.slug === slug)
 
@@ -59,6 +66,26 @@ export default function CocktailDetail() {
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
           <path d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      {/* Share button */}
+      <button
+        onClick={async () => {
+          const url = window.location.href
+          const text = `${cocktail.name} — Bartender's Choice`
+          if (navigator.share) {
+            try { await navigator.share({ title: text, url }) } catch {}
+          } else {
+            await navigator.clipboard.writeText(url)
+            alert('Link copied!')
+          }
+        }}
+        className="fixed top-4 right-14 z-30 bg-charcoal/80 backdrop-blur-sm rounded-full p-2 text-cream hover:text-gold transition-colors"
+        aria-label="Share cocktail"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <path d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
         </svg>
       </button>
 
@@ -91,16 +118,31 @@ export default function CocktailDetail() {
       <div className="px-5 -mt-6 relative z-10">
         <div className="bg-charcoal rounded-t-2xl pt-6 px-1">
           {/* Name */}
-          <h1 className="text-2xl text-gold tracking-widest uppercase text-center font-sans">
-            {cocktail.name}
-          </h1>
+          <div className="flex items-center justify-center gap-3">
+            <h1 className="text-2xl text-gold tracking-widest uppercase text-center font-sans">
+              {cocktail.name}
+            </h1>
+            {cocktail.new && (
+              <span className="text-[10px] font-sans tracking-wider uppercase px-2 py-0.5 rounded-full bg-gold/20 text-gold flex-shrink-0">
+                New
+              </span>
+            )}
+          </div>
 
           {/* Bar / Bartender */}
           {(cocktail.bartender || cocktail.bar) && (
             <p className="text-cream-dim text-xs text-center mt-2 tracking-wider font-sans">
-              {cocktail.bartender && <span>{cocktail.bartender}</span>}
+              {cocktail.bartender && (
+                <Link to={`/recipes?q=${encodeURIComponent(cocktail.bartender)}`} className="underline decoration-charcoal-lighter hover:text-gold hover:decoration-gold transition-colors">
+                  {cocktail.bartender}
+                </Link>
+              )}
               {cocktail.bartender && cocktail.bar && <span> &mdash; </span>}
-              {cocktail.bar && <span>{cocktail.bar}</span>}
+              {cocktail.bar && (
+                <Link to={`/recipes?q=${encodeURIComponent(cocktail.bar)}`} className="underline decoration-charcoal-lighter hover:text-gold hover:decoration-gold transition-colors">
+                  {cocktail.bar}
+                </Link>
+              )}
             </p>
           )}
 
@@ -201,6 +243,11 @@ export default function CocktailDetail() {
                 {tag}
               </span>
             ))}
+            {cocktail.extras.map((tag) => (
+              <span key={tag} className="text-[10px] tracking-wider uppercase font-sans px-2 py-1 rounded-full bg-gold/10 text-gold/70">
+                {tag}
+              </span>
+            ))}
           </div>
 
           {/* Personal Notes */}
@@ -223,6 +270,27 @@ export default function CocktailDetail() {
               rows={3}
               className="w-full bg-charcoal-light border border-charcoal-lighter rounded-lg px-3 py-2.5 text-cream text-sm placeholder:text-cream-dim/40 focus:outline-none focus:border-gold/50 resize-y leading-relaxed"
             />
+          </div>
+
+          {/* Related cocktails */}
+          {(() => {
+            const related = getRelated(cocktail, cocktails)
+            if (related.length === 0) return null
+            return (
+              <div className="mt-10">
+                <h2 className="text-gold text-xs tracking-[0.2em] uppercase font-sans mb-3">You Might Also Like</h2>
+                <div className="-mx-1">
+                  {related.map((c) => (
+                    <CocktailCard key={c.id} cocktail={c} />
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Random cocktail */}
+          <div className="mt-10 mb-4 flex justify-center">
+            <ShakeButton />
           </div>
         </div>
       </div>

@@ -49,5 +49,12 @@ export default function useUserData() {
     })
   }, [])
 
-  return { getRating, getNotes, setRating, setNotes }
+  const exportData = useCallback(() => data, [data])
+
+  const importData = useCallback((imported: UserDataMap) => {
+    setData(imported)
+    write(imported)
+  }, [])
+
+  return { getRating, getNotes, setRating, setNotes, exportData, importData }
 }

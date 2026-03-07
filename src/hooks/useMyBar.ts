@@ -44,5 +44,13 @@ export default function useMyBar() {
     writeBar(new Set())
   }, [])
 
-  return { myIngredients, toggle, has, clear, count: myIngredients.size }
+  const exportBar = useCallback(() => [...myIngredients], [myIngredients])
+
+  const importBar = useCallback((items: string[]) => {
+    const next = new Set(items)
+    setMyIngredients(next)
+    writeBar(next)
+  }, [])
+
+  return { myIngredients, toggle, has, clear, count: myIngredients.size, exportBar, importBar }
 }
