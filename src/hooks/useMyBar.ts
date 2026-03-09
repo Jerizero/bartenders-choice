@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react'
+import { persist, readSync, restoreIfNeeded } from '../utils/storage'
 
 const STORAGE_KEY = 'bartenders-choice-mybar'
 
 function readBar(): Set<string> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readSync(STORAGE_KEY)
     if (!raw) return new Set()
     return new Set(JSON.parse(raw) as string[])
   } catch {
@@ -13,11 +14,7 @@ function readBar(): Set<string> {
 }
 
 function writeBar(items: Set<string>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...items]))
-  } catch {
-    // localStorage unavailable
-  }
+  persist(STORAGE_KEY, JSON.stringify([...items]))
 }
 
 export default function useMyBar() {
@@ -31,6 +28,18 @@ export default function useMyBar() {
     } catch {
       setUnavailable(true)
     }
+
+    // Restore from IndexedDB if localStorage was cleared
+    restoreIfNeeded(STORAGE_KEY).then((restored) => {
+      if (restored) {
+        try {
+          const items = new Set(JSON.parse(restored) as string[])
+          if (items.size > 0) setMyIngredients(items)
+        } catch {
+          // corrupt data
+        }
+      }
+    })
   }, [])
 
   const toggle = useCallback((ingredient: string) => {

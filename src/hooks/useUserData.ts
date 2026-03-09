@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { persist, readSync, restoreIfNeeded } from '../utils/storage'
 
 const STORAGE_KEY = 'bartenders-choice-userdata'
 
@@ -11,7 +12,7 @@ type UserDataMap = Record<number, CocktailUserData>
 
 function read(): UserDataMap {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readSync(STORAGE_KEY)
     if (!raw) return {}
     return JSON.parse(raw) as UserDataMap
   } catch {
@@ -20,15 +21,24 @@ function read(): UserDataMap {
 }
 
 function write(data: UserDataMap) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  } catch {
-    // localStorage unavailable (private browsing)
-  }
+  persist(STORAGE_KEY, JSON.stringify(data))
 }
 
 export default function useUserData() {
   const [data, setData] = useState<UserDataMap>(read)
+
+  useEffect(() => {
+    restoreIfNeeded(STORAGE_KEY).then((restored) => {
+      if (restored) {
+        try {
+          const parsed = JSON.parse(restored) as UserDataMap
+          if (Object.keys(parsed).length > 0) setData(parsed)
+        } catch {
+          // corrupt data
+        }
+      }
+    })
+  }, [])
 
   const getRating = useCallback((id: number) => data[id]?.rating ?? 0, [data])
   const getNotes = useCallback((id: number) => data[id]?.notes ?? '', [data])

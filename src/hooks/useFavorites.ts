@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react'
+import { persist, readSync, restoreIfNeeded } from '../utils/storage'
 
 const STORAGE_KEY = 'bartenders-choice-favorites'
 
 function readFavorites(): Set<number> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readSync(STORAGE_KEY)
     if (!raw) return new Set()
     return new Set(JSON.parse(raw) as number[])
   } catch {
@@ -13,11 +14,7 @@ function readFavorites(): Set<number> {
 }
 
 function writeFavorites(ids: Set<number>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
-  } catch {
-    // localStorage unavailable (private browsing)
-  }
+  persist(STORAGE_KEY, JSON.stringify([...ids]))
 }
 
 export default function useFavorites() {
@@ -31,6 +28,17 @@ export default function useFavorites() {
     } catch {
       setUnavailable(true)
     }
+
+    restoreIfNeeded(STORAGE_KEY).then((restored) => {
+      if (restored) {
+        try {
+          const ids = new Set(JSON.parse(restored) as number[])
+          if (ids.size > 0) setFavorites(ids)
+        } catch {
+          // corrupt data
+        }
+      }
+    })
   }, [])
 
   const toggle = useCallback((id: number) => {
