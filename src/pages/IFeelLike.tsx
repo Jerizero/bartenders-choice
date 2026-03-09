@@ -7,17 +7,16 @@ import type { Cocktail } from '../types'
 const cocktails = cocktailsData as Cocktail[]
 const imgMap = imageMap as Record<string, string>
 
-type Step = 'choose' | 'baseAlcohol' | 'sensation' | 'style' | 'strength' | 'results'
+type Step = 'choose' | 'baseAlcohol' | 'sensation' | 'style' | 'results'
 
-const SPIRIT_FIRST: Step[] = ['choose', 'baseAlcohol', 'sensation', 'style', 'strength', 'results']
-const MOOD_FIRST: Step[] = ['choose', 'sensation', 'baseAlcohol', 'style', 'strength', 'results']
+const SPIRIT_FIRST: Step[] = ['choose', 'baseAlcohol', 'sensation', 'style', 'results']
+const MOOD_FIRST: Step[] = ['choose', 'sensation', 'baseAlcohol', 'style', 'results']
 
 const STEP_LABELS: Record<Step, string> = {
   choose: 'How do you want to start?',
   baseAlcohol: 'What spirit are you in the mood for?',
   sensation: 'How do you want it to feel?',
   style: 'How should it be made?',
-  strength: 'Light or dark?',
   results: 'Here are your matches',
 }
 
@@ -30,8 +29,6 @@ const STYLE_OPTIONS = [
   'shaken (up)', 'shaken (rocks)', 'stirred (up)', 'stirred (rocks)',
   'fizzy', 'tiki', 'crushed', 'tall',
 ]
-const STRENGTH_OPTIONS = ['light', 'dark', 'both']
-
 const BASE_ALCOHOL_OPTIONS = [
   'gin', 'whiskey', 'bourbon', 'rye', 'rum', 'tequila', 'mezcal',
   'vodka', 'brandy', 'cognac', 'scotch', 'champagne',
@@ -48,13 +45,6 @@ function getOptionsWithCounts(
   }))
 }
 
-function getStrengthCounts(pool: Cocktail[]) {
-  return STRENGTH_OPTIONS.map((opt) => ({
-    value: opt,
-    count: pool.filter((c) => c.lightDark === opt || (opt === 'both' && c.lightDark === 'both')).length,
-  }))
-}
-
 export default function IFeelLike() {
   const [step, setStep] = useState<Step>('choose')
   const [flow, setFlow] = useState<Step[]>(SPIRIT_FIRST)
@@ -62,8 +52,7 @@ export default function IFeelLike() {
     baseAlcohol: string | null
     sensation: string | null
     style: string | null
-    strength: string | null
-  }>({ baseAlcohol: null, sensation: null, style: null, strength: null })
+  }>({ baseAlcohol: null, sensation: null, style: null })
 
   // Filter pools — order-independent, always apply all active filters
   const poolAfterAlcohol = useMemo(() => {
@@ -81,13 +70,7 @@ export default function IFeelLike() {
     return poolAfterSensation.filter((c) => c.style.includes(selections.style!))
   }, [poolAfterSensation, selections.style])
 
-  const finalPool = useMemo(() => {
-    if (!selections.strength) return poolAfterStyle
-    if (selections.strength === 'both') return poolAfterStyle
-    return poolAfterStyle.filter(
-      (c) => c.lightDark === selections.strength || c.lightDark === 'both'
-    )
-  }, [poolAfterStyle, selections.strength])
+  const finalPool = poolAfterStyle
 
   // Current pool for showing counts (everything filtered so far)
   const currentPool = useMemo(() => {
@@ -108,7 +91,7 @@ export default function IFeelLike() {
     setStep(f[1]) // skip 'choose', go to first real step
   }
 
-  function select(field: 'baseAlcohol' | 'sensation' | 'style' | 'strength', value: string) {
+  function select(field: 'baseAlcohol' | 'sensation' | 'style', value: string) {
     setSelections((prev) => ({ ...prev, [field]: value }))
     const nextStep = flow[flow.indexOf(step) + 1]
     if (nextStep) setStep(nextStep)
@@ -121,7 +104,7 @@ export default function IFeelLike() {
   }
 
   function startOver() {
-    setSelections({ baseAlcohol: null, sensation: null, style: null, strength: null })
+    setSelections({ baseAlcohol: null, sensation: null, style: null })
     setFlow(SPIRIT_FIRST)
     setStep('choose')
   }
@@ -152,7 +135,7 @@ export default function IFeelLike() {
       </p>
 
       {/* Current selections */}
-      {(selections.baseAlcohol || selections.sensation || selections.style || selections.strength) && (
+      {(selections.baseAlcohol || selections.sensation || selections.style) && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
           {selections.baseAlcohol && (
             <span className="text-[10px] tracking-wider uppercase font-sans px-3 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
@@ -167,11 +150,6 @@ export default function IFeelLike() {
           {selections.style && (
             <span className="text-[10px] tracking-wider uppercase font-sans px-3 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
               {selections.style}
-            </span>
-          )}
-          {selections.strength && (
-            <span className="text-[10px] tracking-wider uppercase font-sans px-3 py-1 rounded-full bg-gold/15 text-gold border border-gold/30">
-              {selections.strength}
             </span>
           )}
         </div>
@@ -261,28 +239,6 @@ export default function IFeelLike() {
             ))}
           </div>
           <button onClick={() => select('style', '')} className="w-full mt-3 text-cream-dim text-xs underline">
-            Skip this step
-          </button>
-        </>
-      )}
-
-      {/* Strength step */}
-      {step === 'strength' && (
-        <>
-          <div className="grid grid-cols-3 gap-2">
-            {getStrengthCounts(poolAfterStyle).map(({ value, count }) => (
-              <button
-                key={value}
-                onClick={() => select('strength', value)}
-                disabled={count === 0}
-                className="px-4 py-3 rounded-lg border border-charcoal-lighter text-sm font-sans tracking-wider capitalize text-cream hover:border-gold/50 hover:text-gold active:bg-gold/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {value}
-                <span className="block text-[10px] text-cream-dim mt-0.5">{count}</span>
-              </button>
-            ))}
-          </div>
-          <button onClick={() => select('strength', '')} className="w-full mt-3 text-cream-dim text-xs underline">
             Skip this step
           </button>
         </>

@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import cocktailsData from '../data/cocktails.json'
 import imageMap from '../data/image-map.json'
 import type { Cocktail } from '../types'
@@ -26,14 +26,8 @@ export default function CocktailDetail() {
   const [imgError, setImgError] = useState(false)
   const { isFavorite, toggle } = useFavoritesContext()
   const { getRating, setRating, getNotes, setNotes } = useUserDataContext()
-  const [showSaved, setShowSaved] = useState(false)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
-
-  const handleNotesChange = useCallback((id: number, value: string) => {
-    setNotes(id, value)
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => setShowSaved(true), 600)
-  }, [setNotes])
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [draftNotes, setDraftNotes] = useState('')
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -196,7 +190,7 @@ export default function CocktailDetail() {
           {/* Rating */}
           {(() => {
             const userRating = getRating(cocktail.id)
-            const displayRating = userRating || cocktail.rating
+            const displayRating = userRating
             return (
               <div className="mt-8">
                 <div className="flex items-center gap-1">
@@ -252,24 +246,60 @@ export default function CocktailDetail() {
 
           {/* Personal Notes */}
           <div className="mt-8">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-gold text-xs tracking-[0.2em] uppercase font-sans">My Notes</h2>
-              <span
-                className={`text-[10px] tracking-wider font-sans transition-opacity duration-500 ${
-                  showSaved ? 'text-gold/80 opacity-100' : 'opacity-0'
-                }`}
-                onTransitionEnd={() => { if (showSaved) setTimeout(() => setShowSaved(false), 1500) }}
+            <h2 className="text-gold text-xs tracking-[0.2em] uppercase font-sans mb-3">My Notes</h2>
+            {editingNotes ? (
+              <textarea
+                autoFocus
+                value={draftNotes}
+                onChange={(e) => setDraftNotes(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    const trimmed = draftNotes.trim()
+                    setNotes(cocktail.id, trimmed)
+                    setEditingNotes(false)
+                  }
+                }}
+                onBlur={() => {
+                  const trimmed = draftNotes.trim()
+                  setNotes(cocktail.id, trimmed)
+                  setEditingNotes(false)
+                }}
+                placeholder="Add your tasting notes, variations, or reminders..."
+                rows={3}
+                className="w-full bg-charcoal-light border border-charcoal-lighter rounded-lg px-3 py-2.5 text-cream text-sm placeholder:text-cream-dim/40 focus:outline-none focus:border-gold/50 resize-y leading-relaxed"
+              />
+            ) : getNotes(cocktail.id) ? (
+              <div className="group relative bg-charcoal-light/50 rounded-lg px-3 py-2.5">
+                <p
+                  className="text-cream text-sm leading-relaxed whitespace-pre-wrap cursor-pointer"
+                  onClick={() => { setDraftNotes(getNotes(cocktail.id)); setEditingNotes(true) }}
+                >
+                  {getNotes(cocktail.id)}
+                </p>
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => { setDraftNotes(getNotes(cocktail.id)); setEditingNotes(true) }}
+                    className="text-cream-dim text-[10px] tracking-wider uppercase font-sans hover:text-gold transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setNotes(cocktail.id, '')}
+                    className="text-cream-dim text-[10px] tracking-wider uppercase font-sans hover:text-gold transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setDraftNotes(''); setEditingNotes(true) }}
+                className="text-cream-dim text-sm hover:text-cream transition-colors"
               >
-                Saved
-              </span>
-            </div>
-            <textarea
-              value={getNotes(cocktail.id)}
-              onChange={(e) => handleNotesChange(cocktail.id, e.target.value)}
-              placeholder="Add your tasting notes, variations, or reminders..."
-              rows={3}
-              className="w-full bg-charcoal-light border border-charcoal-lighter rounded-lg px-3 py-2.5 text-cream text-sm placeholder:text-cream-dim/40 focus:outline-none focus:border-gold/50 resize-y leading-relaxed"
-            />
+                + Add a note
+              </button>
+            )}
           </div>
 
           {/* Related cocktails */}
