@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 const STORAGE_KEY = 'bartenders-choice-mybar'
 
@@ -22,6 +22,16 @@ function writeBar(items: Set<string>) {
 
 export default function useMyBar() {
   const [myIngredients, setMyIngredients] = useState<Set<string>>(readBar)
+  const [unavailable, setUnavailable] = useState(false)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('_test', '1')
+      localStorage.removeItem('_test')
+    } catch {
+      setUnavailable(true)
+    }
+  }, [])
 
   const toggle = useCallback((ingredient: string) => {
     setMyIngredients((prev) => {
@@ -52,5 +62,5 @@ export default function useMyBar() {
     writeBar(next)
   }, [])
 
-  return { myIngredients, toggle, has, clear, count: myIngredients.size, exportBar, importBar }
+  return { myIngredients, toggle, has, clear, count: myIngredients.size, exportBar, importBar, unavailable }
 }

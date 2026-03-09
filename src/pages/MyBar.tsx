@@ -376,13 +376,19 @@ const tabs: { key: Tab; label: string }[] = [
 
 export default function MyBar() {
   const [activeTab, setActiveTab] = useState<Tab>('ingredients')
-  const { count } = useMyBarContext()
+  const { count, unavailable } = useMyBarContext()
 
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl text-gold tracking-widest uppercase text-center pt-6 pb-2 font-sans">
         My Bar
       </h1>
+
+      {unavailable && (
+        <p className="text-xs text-center text-red-400 px-4 pb-2">
+          Storage unavailable — your picks won't be saved between sessions.
+        </p>
+      )}
 
       {count > 0 && (
         <p className="text-cream-dim text-center text-xs mb-2 font-sans tracking-wider">

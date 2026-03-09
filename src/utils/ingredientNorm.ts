@@ -89,6 +89,9 @@ const ALIASES: Record<string, string> = {
   'cruzan black strap rum': 'blackstrap rum',
   // Bruised cucumber is just cucumber
   'bruised cucumber': 'cucumber',
+  // Whiskey spelling variants
+  'japanese whiskey': 'japanese whisky',
+  'irish': 'irish whiskey',
 }
 
 function cleanOne(raw: string): string {
